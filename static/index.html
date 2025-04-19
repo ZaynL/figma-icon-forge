@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figma SVG MCP</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        
+        h1, h2 {
+            color: #2c3e50;
+        }
+        
+        .card {
+            border: 1px solid #eaeaea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        form {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .results {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fff;
+            display: none;
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .icon-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .icon-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .icon-preview {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .icon-name {
+            font-size: 12px;
+            text-align: center;
+            word-break: break-all;
+        }
+        
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .debug-info {
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .button-secondary {
+            background-color: #2196F3;
+        }
+        
+        .button-secondary:hover {
+            background-color: #0b7dda;
+        }
+        
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            font-weight: normal;
+        }
+        
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        /* Custom context menu */
+        .custom-menu {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            border-radius: 3px;
+            z-index: 1000;
+            width: 180px;
+        }
+        
+        .custom-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .custom-menu-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .custom-menu-separator {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 4px 0;
+        }
+        
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <h1>Figma SVG MCP Demo</h1>
+    
+    <div class="card">
+        <h2>Icon Search</h2>
+        <form id="icon-search-form">
+            <label for="icon-query">Search for icons:</label>
+            <input type="text" id="icon-query" name="query" placeholder="Example: home, user, menu..." required>
+            
+            <label for="icon-style">Style (optional):</label>
+            <input type="text" id="icon-style" name="style" placeholder="fill, stroke">
+            
+            <button type="submit">Search Icons</button>
+        </form>
+        
+        <div id="icon-results" class="results">
+            <h3>Search Results</h3>
+            <div id="icon-grid" class="icon-grid"></div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>Figma to React</h2>
+        <form id="figma-form">
+            <label for="figma-file">Figma File Key:</label>
+            <input type="text" id="figma-file" name="file_key" placeholder="Enter Figma file key..." required>
+            
+            <label for="figma-node">Node ID:
+                <span class="tooltip">ⓘ
+                    <span class="tooltiptext">Format should be 0:1 for page 0, node 1. For best results, use the debug button first.</span>
+                </span>
+            </label>
+            <input type="text" id="figma-node" name="node_id" placeholder="Enter node ID (e.g., 0:1)..." required>
+            
+            <div>
+                <button type="submit">Generate React Component</button>
+                <button type="button" id="debug-figma" class="button-secondary">Debug Node</button>
+            </div>
+        </form>
+        
+        <div id="figma-results" class="results">
+            <h3>Generated React Component</h3>
+            <pre id="code-output"></pre>
+        </div>
+        
+        <div id="debug-results" class="results">
+            <h3>Debug Information</h3>
+            <div id="debug-output" class="debug-info"></div>
+        </div>
+    </div>
+
+    <!-- Custom context menu -->
+    <div id="custom-menu" class="custom-menu">
+        <div id="menu-copy-image" class="custom-menu-item">Copy as Image</div>
+        <div id="menu-copy-svg" class="custom-menu-item">Copy SVG Code</div>
+        <div id="menu-copy-name" class="custom-menu-item">Copy Icon Name</div>
+        <div class="custom-menu-separator"></div>
+        <div id="menu-download-png" class="custom-menu-item">Download as PNG</div>
+        <div id="menu-download-svg" class="custom-menu-item">Download as SVG</div>
+    </div>
+
+    <script>
+        /**
+         * Fallback SVG icons for common icon libraries
+         */
+        const fallbackIcons = {
+            // UI icons
+            'uil': '<path d="M12 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2z" fill="currentColor"/>',
+            
+            // Box icons
+            'bx': '<rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/>',
+            'bxs': '<rect x="3" y="3" width="18" height="18" rx="2" fill="currentColor"/>',
+            
+            // Streamline icons
+            'streamline': '<circle cx="12" cy="12" r="10" fill="currentColor"/>',
+            
+            // Remix icons
+            'ri': '<path d="M21.15 3.85a2 2 0 0 0-2.8 0L3.85 18.35a2 2 0 0 0 0 2.8 2 2 0 0 0 2.8 0L21.15 6.65a2 2 0 0 0 0-2.8z" fill="currentColor"/>',
+            
+            // Lucide icons
+            'lucide': '<circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>',
+            
+            // TDesign icons
+            'tdesign': '<path d="M12 2L2 7v10l10 5 10-5V7L12 2z" fill="currentColor"/>',
+            
+            // Default fallback
+            'default': '<rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"/>'
+        };
+
+        // Initialize current context menu icon data
+        let currentIconData = {
+            element: null,
+            name: '',
+            svgContent: ''
+        };
+
+        /**
+         * Get a fallback icon for a specific prefix
+         */
+        function getFallbackIcon(prefix) {
+            return fallbackIcons[prefix] || fallbackIcons.default;
+        }
+        
+        /**
+         * Show a toast notification
+         */
+        function showToast(message, duration = 2000) {
+            // Remove any existing toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                document.body.removeChild(existingToast);
+            }
+            
+            // Create and show new toast
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            // Remove after specified duration
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, duration);
+        }
+
+        /**
+         * Copy text to clipboard
+         */
+        function copyTextToClipboard(text, successMsg) {
+            try {
+                // Use the modern clipboard API if available
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text)
+                        .then(() => showToast(successMsg))
+                        .catch(err => {
+                            console.error('Clipboard API error:', err);
+                            // Fallback for clipboard API issues
+                            fallbackCopyTextToClipboard(text, successMsg);
+                        });
+                } else {
+                    // Fallback for browsers without clipboard API
+                    fallbackCopyTextToClipboard(text, successMsg);
+                }
+            } catch (err) {
+                console.error('Copy error:', err);
+                showToast('Failed to copy to clipboard');
+            }
+        }
+
+        /**
+         * Fallback method for copying text
+         */
+        function fallbackCopyTextToClipboard(text, successMsg) {
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            
+            // Make the textarea invisible
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-9999px';
+            textArea.style.top = '0';
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast(successMsg);
+                } else {
+                    showToast('Browser prevented copying. Try using right-click menu instead.');
+                }
+            } catch (err) {
+                console.error('execCommand Error:', err);
+                showToast('Failed to copy to clipboard');
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        /**
+         * Copy SVG as an image (PNG)
+         */
+        async function copySvgAsImage(svgElement) {
+            try {
+                if (!svgElement) {
+                    throw new Error('SVG element not found');
+                }
+                
+                const width = 128;
+                const height = 128;
+                
+                // Create a canvas with the desired dimensions
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                // White background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Create an SVG blob
+                const svgString = new XMLSerializer().serializeToString(svgElement);
+                const svg = new Blob([svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(svg);
+                
+                // Create an image from the SVG
+                const img = new Image();
+                
+                // Wait for the image to load
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = url;
+                });
+                
+                // Draw the image onto the canvas
+                ctx.drawImage(img, 0, 0, width, height);
+                URL.revokeObjectURL(url);
+                
+                // Try modern clipboard API first
+                if (navigator.clipboard && navigator.clipboard.write) {
+                    try {
+                        // Get the canvas data as a blob
+                        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                        
+                        // Copy to clipboard
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+                        
+                        showToast('Copied icon as image');
+                        return;
+                    } catch (clipboardErr) {
+                        console.warn('Clipboard API not supported for images, trying fallback', clipboardErr);
+                    }
+                }
+                
+                // Fallback: try to open image in new tab for manual copy
+                try {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const tab = window.open();
+                    if (tab) {
+                        tab.document.write(`<img src="${dataUrl}" alt="Icon Image"><p>Right-click on the image and select "Copy Image" to copy it to clipboard.</p>`);
+                        showToast('Image opened in new tab for copying');
+                    } else {
+                        showToast('Popup blocked. Allow popups to copy image.');
+                    }
+                } catch (fallbackErr) {
+                    console.error('Fallback error:', fallbackErr);
+                    showToast('Failed to copy image: ' + fallbackErr.message);
+                }
+            } catch (error) {
+                console.error('Error copying image:', error);
+                showToast('Failed to copy image: ' + error.message);
+            }
+        }
+        
+        /**
+         * Download SVG as a file
+         */
+        function downloadSvg(svgContent, iconName) {
+            try {
+                // Create the complete SVG document
+                const svgDoctype = '<?xml version="1.0" encoding="UTF-8" standalone="no"?>';
+                const svgDocument = `${svgDoctype}
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+    ${svgContent}
+</svg>`;
+                
+                // Create blob and download link
+                const blob = new Blob([svgDocument], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${iconName.replace(':', '-')}.svg`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // Clean up
+                setTimeout(() => URL.revokeObjectURL(url), 100);
+                showToast(`Downloaded ${iconName} as SVG`);
+            } catch (error) {
+                console.error('Error downloading SVG:', error);
+                showToast('Failed to download SVG: ' + error.message);
+            }
+        }
+        
+        /**
+         * Download PNG as a file
+         */
+        async function downloadPng(svgElement, iconName) {
+            try {
+                if (!svgElement) {
+                    throw new Error('SVG element not found');
+                }
+                
+                const width = 128;
+                const height = 128;
+                
+                // Create a canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                // Fill with white background
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Create an SVG blob
+                const svgString = new XMLSerializer().serializeToString(svgElement);
+                const svg = new Blob([svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(svg);
+                
+                // Create an image from the SVG
+                const img = new Image();
+                
+                // Wait for the image to load
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = reject;
+                    img.src = url;
+                });
+                
+                // Draw the image onto the canvas
+                ctx.drawImage(img, 0, 0, width, height);
+                URL.revokeObjectURL(url);
+                
+                // Convert canvas to data URL
+                const dataUrl = canvas.toDataURL('image/png');
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `${iconName.replace(':', '-')}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast(`Downloaded ${iconName} as PNG`);
+            } catch (error) {
+                console.error('Error downloading PNG:', error);
+                showToast('Failed to download PNG: ' + error.message);
+            }
+        }
+        
+        /**
+         * Show custom context menu for icon
+         */
+        function showContextMenu(e, iconElement, iconName, svgContent) {
+            e.preventDefault();
+            
+            // Store current icon data for menu actions
+            currentIconData.element = iconElement.querySelector('svg');
+            currentIconData.name = iconName;
+            currentIconData.svgContent = svgContent;
+            
+            // Position and show the menu
+            const menu = document.getElementById('custom-menu');
+            menu.style.left = `${e.pageX}px`;
+            menu.style.top = `${e.pageY}px`;
+            menu.style.display = 'block';
+            
+            // Add event listener to hide menu when clicking elsewhere
+            setTimeout(() => {
+                const hideMenu = (event) => {
+                    if (!menu.contains(event.target)) {
+                        menu.style.display = 'none';
+                        document.removeEventListener('click', hideMenu);
+                    }
+                };
+                document.addEventListener('click', hideMenu);
+            }, 0);
+        }
+
+        // Icon Search Form
+        document.getElementById('icon-search-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const query = document.getElementById('icon-query').value;
+            const style = document.getElementById('icon-style').value;
+            
+            try {
+                // Clear previous results and show loading
+                const iconGrid = document.getElementById('icon-grid');
+                iconGrid.innerHTML = '<p>Searching for icons...</p>';
+                document.getElementById('icon-results').style.display = 'block';
+                
+                // Make the search request
+                const response = await fetch(`/search-icons?query=${encodeURIComponent(query)}&style=${encodeURIComponent(style)}`);
+                const data = await response.json();
+                
+                // Clear the grid for new results
+                iconGrid.innerHTML = '';
+                
+                if (data.status === 'success' && data.data.icons && data.data.icons.length > 0) {
+                    console.log(`Found ${data.data.icons.length} icons`);
+                    
+                    // Process each icon
+                    data.data.icons.forEach(icon => {
+                        // Determine SVG content - use icon SVG body or fallback
+                        let svgContent = '';
+                        if (icon.svg_body && icon.svg_body.trim().length > 0) {
+                            svgContent = icon.svg_body;
+                            console.log(`Using API SVG for ${icon.full_name}`);
+                        } else {
+                            // Use fallback based on prefix
+                            svgContent = getFallbackIcon(icon.prefix);
+                            console.log(`Using fallback for ${icon.full_name}`);
+                        }
+                        
+                        // Create the icon element
+                        const iconItem = document.createElement('div');
+                        iconItem.className = 'icon-item';
+                        
+                        // Set the inner HTML directly - simpler approach that works for SVGs
+                        iconItem.innerHTML = `
+                            <div class="icon-preview">
+                                <div style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; color: #333;">
+                                    <svg width="${icon.width || 24}" height="${icon.height || 24}" 
+                                         viewBox="0 0 ${icon.width || 24} ${icon.height || 24}" 
+                                         fill="currentColor">
+                                        ${svgContent}
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="icon-name">${icon.full_name}</div>
+                        `;
+                        
+                        // Add context menu for right click
+                        iconItem.addEventListener('contextmenu', (evt) => {
+                            showContextMenu(evt, iconItem, icon.full_name, svgContent);
+                        });
+                        
+                        // Regular click copies the image
+                        iconItem.addEventListener('click', () => {
+                            const svgElement = iconItem.querySelector('svg');
+                            if (svgElement) {
+                                copySvgAsImage(svgElement);
+                            } else {
+                                copyTextToClipboard(icon.full_name, `Copied name: ${icon.full_name}`);
+                            }
+                        });
+                        
+                        // Add to the grid
+                        iconGrid.appendChild(iconItem);
+                    });
+                } else {
+                    iconGrid.innerHTML = '<p>No icons found matching your search.</p>';
+                }
+            } catch (error) {
+                console.error('Error searching for icons:', error);
+                document.getElementById('icon-grid').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        });
+        
+        // Setup context menu item event listeners
+        document.getElementById('menu-copy-name').addEventListener('click', function() {
+            copyTextToClipboard(currentIconData.name, `Copied name: ${currentIconData.name}`);
+            document.getElementById('custom-menu').style.display = 'none';
+        });
+        
+        document.getElementById('menu-copy-svg').addEventListener('click', function() {
+            const svgCode = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">${currentIconData.svgContent}</svg>`;
+            copyTextToClipboard(svgCode, `Copied SVG code for ${currentIconData.name}`);
+            document.getElementById('custom-menu').style.display = 'none';
+        });
+        
+        document.getElementById('menu-copy-image').addEventListener('click', function() {
+            if (currentIconData.element) {
+                copySvgAsImage(currentIconData.element);
+            } else {
+                showToast('Failed to copy image: SVG element not found');
+            }
+            document.getElementById('custom-menu').style.display = 'none';
+        });
+        
+        document.getElementById('menu-download-svg').addEventListener('click', function() {
+            downloadSvg(currentIconData.svgContent, currentIconData.name);
+            document.getElementById('custom-menu').style.display = 'none';
+        });
+        
+        document.getElementById('menu-download-png').addEventListener('click', function() {
+            if (currentIconData.element) {
+                downloadPng(currentIconData.element, currentIconData.name);
+            } else {
+                showToast('Failed to download PNG: SVG element not found');
+            }
+            document.getElementById('custom-menu').style.display = 'none';
+        });
+        
+        // Figma to React Form
+        document.getElementById('figma-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fileKey = document.getElementById('figma-file').value;
+            const nodeId = document.getElementById('figma-node').value;
+            
+            try {
+                const response = await fetch('/figma-to-react', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        file_key: fileKey,
+                        node_id: nodeId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.status === 'success' && data.data && data.data.code) {
+                    document.getElementById('code-output').textContent = data.data.code;
+                    document.getElementById('figma-results').style.display = 'block';
+                    document.getElementById('debug-results').style.display = 'none';
+                } else {
+                    document.getElementById('code-output').textContent = `Error: ${data.error || 'Unknown error'}`;
+                    document.getElementById('figma-results').style.display = 'block';
+                    document.getElementById('debug-results').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while generating the React component.');
+            }
+        });
+        
+        // Debug Figma Node
+        document.getElementById('debug-figma').addEventListener('click', async function() {
+            const fileKey = document.getElementById('figma-file').value;
+            const nodeId = document.getElementById('figma-node').value;
+            
+            if (!fileKey || !nodeId) {
+                alert('Please enter both Figma file key and node ID');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/debug-figma-node?file_key=${encodeURIComponent(fileKey)}&node_id=${encodeURIComponent(nodeId)}`);
+                const data = await response.json();
+                
+                document.getElementById('debug-output').innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                document.getElementById('debug-results').style.display = 'block';
+                document.getElementById('figma-results').style.display = 'none';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while debugging the Figma node.');
+            }
+        });
+        
+        // Hide context menu on page load
+        document.getElementById('custom-menu').style.display = 'none';
+        
+        // Reset context menu on page click
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#custom-menu')) {
+                document.getElementById('custom-menu').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
